@@ -64,7 +64,13 @@ if (!process.env.ALCHEMY_DEPLOY) {
   });
 }
 
-import { D1Database, Nextjs, Worker } from "alchemy/cloudflare";
+import {
+  D1Database,
+  DurableObjectNamespace,
+  Nextjs,
+  R2Bucket,
+  Worker,
+} from "alchemy/cloudflare";
 import { CloudflareStateStore } from "alchemy/state";
 import { config } from "dotenv";
 
@@ -105,6 +111,17 @@ const db = await D1Database("database", {
   migrationsDir: "../../packages/db/src/migrations",
 });
 
+// Board Durable Object（1 ボード = 1 DO）。要素の正本に DO 内 SQLite を使うため sqlite:true。
+// className "Board" は apps/server が index.ts で export する Board クラスと一致させる。
+const board = DurableObjectNamespace("board", {
+  className: "Board",
+  sqlite: true,
+});
+
+// 画像・サムネ・バックアップ用 R2 バケット。
+// 資産アクセスは server Worker 経由に集約し、web からは直接バインドしない（認可の一元化）。
+const assets = await R2Bucket("assets");
+
 export const web = await Nextjs("web", {
   ...webName,
   cwd: "../../apps/web",
@@ -123,7 +140,9 @@ export const web = await Nextjs("web", {
     NEXT_PUBLIC_APP_URL: alchemy.env.NEXT_PUBLIC_APP_URL!,
     DB: db,
     CORS_ORIGIN: alchemy.env.CORS_ORIGIN!,
-    BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
+    // N6: web は BETTER_AUTH_SECRET を使わない（@liveboard/auth/permissions の
+    // アクセス制御文のみ参照）。平文 secret を web の vars に焼かないため bind しない。
+    // 認証の真実は server Worker が持つ。
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,
     COOKIE_DOMAIN: alchemy.env.COOKIE_DOMAIN!,
   },
@@ -138,8 +157,13 @@ export const server = await Worker("server", {
   cwd: "../../apps/server",
   entrypoint: "src/index.ts",
   compatibility: "node",
+  // Phase 6-1: バックグラウンドジョブ（削除 Saga・GC・孤児回収）の Cron Trigger。
+  // 1 分間隔。ジョブ単位のリース（deletion_job）で同時実行を排他する。
+  crons: ["* * * * *"],
   bindings: {
     DB: db,
+    Board: board,
+    R2_ASSETS: assets,
     CORS_ORIGIN: alchemy.env.CORS_ORIGIN!,
     BETTER_AUTH_SECRET: alchemy.secret.env.BETTER_AUTH_SECRET!,
     BETTER_AUTH_URL: alchemy.env.BETTER_AUTH_URL!,

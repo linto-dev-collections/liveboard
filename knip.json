@@ -16,9 +16,19 @@
       ]
     },
     "apps/server": {
-      "entry": ["src/infrastructure/**/*.ts", "src/middleware/**/*.ts"],
+      "entry": [
+        "src/infrastructure/**/*.ts",
+        "src/middleware/**/*.ts",
+        "src/realtime/**/*.ts"
+      ],
       "project": ["src/**/*.ts"],
-      "ignoreDependencies": ["better-auth", "dotenv", "alchemy", "wrangler"],
+      "ignoreDependencies": [
+        "better-auth",
+        "dotenv",
+        "alchemy",
+        "wrangler",
+        "hono-party"
+      ],
       "ignoreBinaries": ["dot"]
     },
     "packages/auth": {

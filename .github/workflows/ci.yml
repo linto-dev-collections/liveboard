@@ -52,3 +52,61 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  deploy:
+    # CI 合格を必須にする (型エラー / lint 失敗時の誤 deploy を防ぐ)。
+    # PR では deploy job は走らない (if 条件で main への push のみに限定)。
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy
+        run: pnpm run deploy
+        env:
+          # Alchemy
+          ALCHEMY_DEPLOY: "1"
+          ALCHEMY_STAGE: prod
+          ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
+          ALCHEMY_STATE_TOKEN: ${{ secrets.ALCHEMY_STATE_TOKEN }}
+
+          # Cloudflare
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+          # App config (non-secret)
+          CORS_ORIGIN: ${{ vars.CORS_ORIGIN }}
+          BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL }}
+          NEXT_PUBLIC_SERVER_URL: ${{ vars.NEXT_PUBLIC_SERVER_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+          FROM_EMAIL: ${{ vars.FROM_EMAIL }}
+          COOKIE_DOMAIN: ${{ vars.COOKIE_DOMAIN }}
+
+          # App secrets
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+
+          # Better Auth Google Sign-in (scope: openid email profile)
+          # redirect URI は Better Auth 既定の `${BETTER_AUTH_URL}/api/auth/callback/google`
+          GOOGLE_SIGNIN_CLIENT_ID: ${{ vars.GOOGLE_SIGNIN_CLIENT_ID }}
+          GOOGLE_SIGNIN_CLIENT_SECRET: ${{ secrets.GOOGLE_SIGNIN_CLIENT_SECRET }}

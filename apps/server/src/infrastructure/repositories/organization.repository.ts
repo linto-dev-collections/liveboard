@@ -1,5 +1,6 @@
 import {
   accountDeletionPending,
+  board,
   member,
   organization,
   user,
@@ -210,6 +211,13 @@ export function createOrganizationRepository(d1: D1Database) {
           `cannot delete organization '${params.organizationId}': ${others.length} other member(s) exist`,
         );
       }
+      // org→board は RESTRICT のため、配下ボードを先にハード削除してから org を消す（Phase 6-2）。
+      // board DELETE の CASCADE で board_role / board_favorite / comment_thread(→comment→
+      // mention/notification) / board_r2_object(→asset) が連動削除される。R2 オブジェクトは
+      // manifest 消失で孤児化し、孤児回収 GC（reclaim-orphans）が後追いで掃ける。
+      await db
+        .delete(board)
+        .where(eq(board.organizationId, params.organizationId));
       // organization の DELETE で member / invitation は cascade。
       await db
         .delete(organization)

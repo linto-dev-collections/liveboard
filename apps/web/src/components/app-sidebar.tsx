@@ -7,9 +7,15 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@liveboard/ui/components/ui/sidebar";
-import { Building2Icon, LayoutDashboardIcon, UsersIcon } from "lucide-react";
+import {
+  Building2Icon,
+  LayoutDashboardIcon,
+  PresentationIcon,
+  UsersIcon,
+} from "lucide-react";
 import { NavMain, type NavSection } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
+import { NotificationBell } from "@/components/notification-bell";
 import { TeamSwitcher } from "@/components/team-switcher";
 
 const navSections: NavSection[] = [
@@ -19,6 +25,11 @@ const navSections: NavSection[] = [
         title: "ダッシュボード",
         url: "/dashboard",
         icon: <LayoutDashboardIcon />,
+      },
+      {
+        title: "ボード",
+        url: "/dashboard/boards",
+        icon: <PresentationIcon />,
       },
     ],
   },
@@ -49,6 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain sections={navSections} />
       </SidebarContent>
       <SidebarFooter>
+        <NotificationBell />
         <NavUser />
       </SidebarFooter>
       <SidebarRail />

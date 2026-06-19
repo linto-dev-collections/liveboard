@@ -1,1 +1,38 @@
 @import "@liveboard/ui/globals.css";
+
+/*
+ * Excalidraw のライブラリ（既定サイドバー）トグルを非表示にする。
+ * liveboard では MVP でライブラリ機能を使わないため、ツールバー右上のライブラリボタンを
+ * 隠して機能を露出させない（UIOptions にライブラリを隠す prop が無いため CSS で対応）。
+ *
+ * Excalidraw 0.18 の DOM 構造:
+ *   .layer-ui__wrapper__top-right > label.sidebar-trigger__label-element[title="Library"]
+ *     > div.sidebar-trigger.default-sidebar-trigger
+ * `.sidebar-trigger` には Excalidraw が display:flex を設定するが、親の
+ * `.sidebar-trigger__label-element` には display を一切設定しない。そのため**親 label を**
+ * display:none にすれば、!important 無しで（カスケード順に関係なく）ボタンごと隠せる。
+ * `.excalidraw` 配下に限定しているため他の UI には影響しない。
+ */
+.excalidraw .sidebar-trigger__label-element {
+  display: none;
+}
+
+/*
+ * Excalidraw 標準のコラボレーター UserList（右上のアバター列＋「+N」フォロー一覧）を非表示にする。
+ * liveboard は自前の Participants アバター（presence ロスター）を持つため UserList は重複しており、
+ * これを隠して右上のアバターを自前 UI に一本化する。副次効果として、Excalidraw 0.18 の既知バグ
+ * （フォロー一覧ポップオーバー内 ScrollableList の先頭 hint 要素に React key が無く「unique key」警告が出る）
+ * の発生経路（= UserList の「+N」ボタンからしか開けない）を断ち切れる。
+ *
+ * リモートカーソルは appState.collaborators からキャンバスへ直接描画され UserList とは独立なので影響しない。
+ * UserList は `appState.collaborators.size > 0` で renderTopRightUI の直前に描画され、その出力（自前
+ * Participants = [data-slot="avatar-group"]）は UserList__wrapper の兄弟。よって本ルールは自前 UI に影響しない。
+ *
+ * Excalidraw 側は `.excalidraw .UserList__wrapper{display:flex}`（詳細度 0,2,0）を当てるため、確実に
+ * 上書きできるよう祖先 `.layer-ui__wrapper__top-right` を挟んで詳細度 0,3,0 にする（!important 不要）。
+ * `.UserList-Wrapper` はモバイル（メニュー内 fieldset）版。
+ */
+.excalidraw .layer-ui__wrapper__top-right .UserList__wrapper,
+.excalidraw .UserList-Wrapper {
+  display: none;
+}

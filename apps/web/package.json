@@ -10,6 +10,7 @@
     "depcruise": "depcruise src --config .dependency-cruiser.cjs"
   },
   "dependencies": {
+    "@excalidraw/excalidraw": "0.18.1",
     "@liveboard/auth": "workspace:*",
     "@liveboard/env": "workspace:*",
     "@liveboard/server": "workspace:*",
@@ -24,6 +25,7 @@
     "next": "^16.2.6",
     "next-themes": "catalog:",
     "nuqs": "^2.8.9",
+    "partysocket": "^1.2.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",

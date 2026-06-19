@@ -16,7 +16,7 @@ Alchemy が D1 / Durable Object / Workers をまとめて作成・更新する�
                            ▼
       ┌────────────────────────────────────────┐
       │ Web — Next.js / OpenNext               │
-      │ liveboard.linto-dev.workers.dev         │
+      │ liveboard.linto-dev.workers.dev        │
       │ Host dashboard + voting UI             │
       └────────────────────────────────────────┘
                            │  fetch / WS
@@ -24,7 +24,7 @@ Alchemy が D1 / Durable Object / Workers をまとめて作成・更新する�
       ┌────────────────────────────────────────┐
       │ Server — Hono                          │
       │ + Better Auth + PartyServer (Poll)     │
-      │ liveboard-api.linto-dev.workers.dev     │
+      │ liveboard-api.linto-dev.workers.dev    │
       └────────────────────────────────────────┘
                            │
                            ▼
@@ -148,8 +148,8 @@ gh variable set NEXT_PUBLIC_SERVER_URL  --body "https://liveboard-api.linto-dev.
 gh variable set BETTER_AUTH_URL         --body "https://liveboard-api.linto-dev.workers.dev"
 gh variable set CORS_ORIGIN             --body "https://liveboard.linto-dev.workers.dev"
 gh variable set COOKIE_DOMAIN           --body "linto-dev.workers.dev"
-gh variable set FROM_EMAIL              --body "noreply@example.com"
-gh variable set GOOGLE_SIGNIN_CLIENT_ID --body "xxxxxxxx.apps.googleusercontent.com"
+gh variable set FROM_EMAIL              --body "noreply@mail.linto.dev"
+gh variable set GOOGLE_SIGNIN_CLIENT_ID --body "641765280794-r91q82hvmddb85557i9t8ni880o7nlf8.apps.googleusercontent.com"
 ```
 
 - `CORS_ORIGIN` には **Web の origin を必ず含める**（含めないと投票 WS が `1008 forbidden origin` で切断）。

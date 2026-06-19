@@ -8,6 +8,13 @@
       "when": 1781717833549,
       "tag": "0000_daily_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781862664821,
+      "tag": "0001_quick_joshua_kane",
+      "breakpoints": true
     }
   ]
 }

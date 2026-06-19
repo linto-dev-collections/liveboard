@@ -123,6 +123,10 @@ export const member = sqliteTable(
   (table) => [
     index("member_organizationId_idx").on(table.organizationId),
     index("member_userId_idx").on(table.userId),
+    // [手追加・再生成しても消さないこと] (organization_id, user_id) の一意制約（G4・必須）。
+    // BetterAuth は生成しないが、ロール解決(M8)の決定性と board_role/board_favorite の
+    // 複合 FK ターゲット(H5/I2)に必須。`npx auth generate` 再実行時に欠落させないこと。
+    uniqueIndex("member_org_user_uidx").on(table.organizationId, table.userId),
   ],
 );
 

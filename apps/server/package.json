@@ -29,6 +29,8 @@
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.8.2",
+    "hono-party": "^2.1.0",
+    "partyserver": "0.5.8",
     "zod": "catalog:"
   },
   "devDependencies": {

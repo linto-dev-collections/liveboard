@@ -31,6 +31,12 @@ const app = new Hono<AppEnv>()
         UNAUTHORIZED: 401,
         ALREADY_EXISTS: 409,
         VALIDATION_ERROR: 400,
+        // 409 Conflict: 削除中ボードへのアップロード等、現状との競合（H6 のレース窓）
+        CONFLICT: 409,
+        // 413 Payload Too Large: アセットのサイズ上限超過（M9）
+        PAYLOAD_TOO_LARGE: 413,
+        // 415 Unsupported Media Type: 許可外 MIME / マジックバイト不一致 / SVG 無効（M9）
+        UNSUPPORTED_MEDIA_TYPE: 415,
         // 410 Gone: アカウント削除フローが進行中（middleware が user の状態を参照）
         ACCOUNT_DELETION_PENDING: 410,
         // 409 Conflict: 削除 confirm 時点で snapshot と現状が乖離（race ガード）
@@ -44,7 +50,7 @@ const app = new Hono<AppEnv>()
           error: err.message,
           code: err.code,
         },
-        status as 400 | 401 | 403 | 404 | 409 | 410,
+        status as 400 | 401 | 403 | 404 | 409 | 410 | 413 | 415,
       );
     }
     console.error("Unhandled error:", err);

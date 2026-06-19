@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@liveboard/ui/components/ui/card";
-import { Building2Icon, UsersIcon } from "lucide-react";
+import { Building2Icon, PresentationIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 
@@ -21,6 +21,17 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Link href="/dashboard/boards" className="block">
+            <Card className="h-full transition-colors hover:bg-accent/50">
+              <CardHeader>
+                <PresentationIcon className="size-5 text-muted-foreground" />
+                <CardTitle className="mt-2">ボード</CardTitle>
+                <CardDescription>
+                  ホワイトボードの作成・管理を行います。
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
           <Link href="/dashboard/settings/organization" className="block">
             <Card className="h-full transition-colors hover:bg-accent/50">
               <CardHeader>
