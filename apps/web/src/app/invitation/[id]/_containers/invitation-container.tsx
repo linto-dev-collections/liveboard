@@ -24,7 +24,7 @@ type Props = {
  */
 export async function InvitationContainer({ id }: Props) {
   const cookieStore = await cookies();
-  const session = cookieStore.get("__Secure-better-auth.session_token");
+  const session = cookieStore.get("__Secure-liveboard.session_token");
 
   if (!session) {
     redirect(`/sign-in?callbackUrl=${encodeURIComponent(`/invitation/${id}`)}`);

@@ -381,7 +381,10 @@ export const auth = betterAuth({
     // - 1.6.9 の after hook は「sessionToken cookie が同レスポンスでセットされた時のみ」
     //   last_used cookie を書く実装になっており、認証失敗時の cookie 書き込み (#4626)
     //   は修正済み。
-    lastLoginMethod(),
+    // cookieName は advanced.cookiePrefix に追従しない（プラグイン独自既定
+    // "liveboard.last_used_login_method"）ため、明示的にアプリ固有名にして
+    // livepoll とのバッジ用 Cookie 衝突も防ぐ。client 側 (auth-client.ts) と一致必須。
+    lastLoginMethod({ cookieName: "liveboard.last_used_login_method" }),
   ],
   hooks: {
     // /unlink-account の成功時に last_used_login_method cookie を確実に削除する。
@@ -412,9 +415,9 @@ export const auth = betterAuth({
       //  プラグインの after hook は last_used_login_method を更新しない。
       //  ref: better-auth/dist/plugins/last-login-method/index.mjs:65)
       const unlinkedProvider = ctx.body?.providerId;
-      const currentMethod = ctx.getCookie("better-auth.last_used_login_method");
+      const currentMethod = ctx.getCookie("liveboard.last_used_login_method");
       if (!unlinkedProvider || unlinkedProvider !== currentMethod) return;
-      ctx.setCookie("better-auth.last_used_login_method", "", {
+      ctx.setCookie("liveboard.last_used_login_method", "", {
         ...ctx.context.authCookies.sessionToken.attributes,
         // 本 cookie は元から client JS で読まれる前提なので httpOnly:false で出ている。
         // 同じ属性で deletion を出さないとブラウザによっては merge 扱いされないため
@@ -433,6 +436,12 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   advanced: {
+    // 同一親ドメイン (.linto-dev.workers.dev) に同居する別アプリ (livepoll) と
+    // Cookie 名が衝突しないよう、アプリ固有 prefix を付ける。未設定だと両アプリが
+    // 同名 `__Secure-better-auth.session_token` を共有し、一方のセッション Cookie が
+    // 他方の「Cookie 存在」ゲート (middleware / protected layout) を通過してしまう
+    // (cross-app セッション混線 → 組織未解決で Unauthorized)。
+    cookiePrefix: "liveboard",
     defaultCookieAttributes: {
       // SameSite=None: 3rd-party iframe (Notion / Confluence 等) で動画を視聴可能にするため。
       //

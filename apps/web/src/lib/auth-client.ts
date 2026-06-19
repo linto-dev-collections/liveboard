@@ -19,6 +19,8 @@ export const authClient = createAuthClient({
     // 前回ログイン方法 (email / google) を読み取り、sign-in ページで
     // 「前回利用」バッジを出すために使う。サーバ側 lastLoginMethod() と対。
     // 提供 API: getLastUsedLoginMethod() / isLastUsedLoginMethod() / clearLastUsedLoginMethod()
-    lastLoginMethodClient(),
+    // cookieName はサーバ側 lastLoginMethod({ cookieName }) と一致させる
+    // （advanced.cookiePrefix には追従しないため明示）。
+    lastLoginMethodClient({ cookieName: "liveboard.last_used_login_method" }),
   ],
 });

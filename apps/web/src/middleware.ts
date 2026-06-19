@@ -9,9 +9,7 @@ import { NextResponse } from "next/server";
 export const middleware: NextMiddleware = (request) => {
   // BETTER_AUTH_URL が常に https のため、better-auth は cookie に必ず
   // __Secure- prefix を付ける (better-auth/dist/cookies/index.mjs の prefix 判定)。
-  const sessionCookie = request.cookies.get(
-    "__Secure-better-auth.session_token",
-  );
+  const sessionCookie = request.cookies.get("__Secure-liveboard.session_token");
   const { pathname } = request.nextUrl;
   const isAuthPage =
     pathname.startsWith("/sign-in") ||

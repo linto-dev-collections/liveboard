@@ -22,7 +22,7 @@ export default async function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
-  const session = cookieStore.get("__Secure-better-auth.session_token");
+  const session = cookieStore.get("__Secure-liveboard.session_token");
   if (!session) {
     redirect("/sign-in");
   }
