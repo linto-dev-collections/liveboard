@@ -1,0 +1,46 @@
+{
+  "name": "liveboard",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F @liveboard/db db:push",
+    "db:generate": "turbo -F @liveboard/db db:generate",
+    "deploy": "turbo -F @liveboard/infra deploy",
+    "destroy": "turbo -F @liveboard/infra destroy",
+    "db:reset": "rm -rf .alchemy/miniflare/v3/d1 && rm -f packages/infra/.alchemy/liveboard/dev/database.json",
+    "db:auth:generate": "npx auth@latest generate --config packages/auth/src/index.ts --output packages/db/src/schema/auth.ts -y",
+    "check": "biome check --write .",
+    "knip": "knip",
+    "depcruise": "turbo depcruise"
+  },
+  "dependencies": {
+    "@liveboard/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@cloudflare/workers-types": "catalog:",
+    "@liveboard/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "dependency-cruiser": "^17.3.10",
+    "knip": "^6.0.5",
+    "turbo": "^2.8.12",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@10.23.0",
+  "pnpm": {
+    "overrides": {
+      "vite": "^8.0.0"
+    }
+  }
+}

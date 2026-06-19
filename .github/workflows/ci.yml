@@ -1,0 +1,54 @@
+name: CI / Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    # @liveboard/env/web で required な NEXT_PUBLIC_* は next.config.ts の
+    # side-effect import (`import "@liveboard/env/web"`) で module load 時に検証される。
+    # `next typegen` / `next build` どちらも next.config.ts を eval するため、
+    # Type check / Build / 将来追加される全 step が同じ env を必要とする。
+    # vars が未設定でも CI が落ちないよう、本番想定値をフォールバックとして指定する
+    # (実際の値は Repository Variables / Secrets から供給される)。
+    env:
+      NEXT_PUBLIC_SERVER_URL: ${{ vars.NEXT_PUBLIC_SERVER_URL || 'https://api.liveboard.example.com' }}
+      NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'https://liveboard.example.com' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (Biome)
+        run: pnpm biome ci .
+
+      - name: Check unused exports (Knip)
+        run: pnpm knip
+
+      - name: Type check
+        run: pnpm check-types
+
+      - name: Check import boundaries (dependency-cruiser)
+        run: pnpm depcruise
+
+      - name: Build
+        run: pnpm build

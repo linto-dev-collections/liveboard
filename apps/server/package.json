@@ -1,0 +1,43 @@
+{
+  "name": "@liveboard/server",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./hc": {
+      "types": "./dist/hc.d.ts",
+      "default": "./dist/hc.js"
+    }
+  },
+  "scripts": {
+    "postinstall": "tsc -p tsconfig.build.json",
+    "build": "tsdown && tsc -p tsconfig.build.json",
+    "check-types": "tsc --noEmit",
+    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+    "depcruise": "depcruise src --config .dependency-cruiser.cjs",
+    "depcruise:graph": "depcruise src --config .dependency-cruiser.cjs --include-only '^src' --output-type dot | dot -T svg > dependency-graph.svg"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "catalog:",
+    "@liveboard/auth": "workspace:*",
+    "@liveboard/db": "workspace:*",
+    "@liveboard/env": "workspace:*",
+    "@liveboard/shared": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.8.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@liveboard/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "alchemy": "catalog:",
+    "tsdown": "^0.16.5",
+    "typescript": "^5",
+    "wrangler": "catalog:"
+  }
+}

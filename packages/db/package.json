@@ -1,0 +1,36 @@
+{
+  "name": "@liveboard/db",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    },
+    "./schema": {
+      "default": "./src/schema/index.ts"
+    },
+    "./schema/*": {
+      "default": "./src/schema/*.ts"
+    }
+  },
+  "scripts": {
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@libsql/client": "catalog:",
+    "@liveboard/env": "workspace:*",
+    "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.2",
+    "libsql": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@liveboard/config": "workspace:*",
+    "drizzle-kit": "^0.31.8",
+    "typescript": "^5"
+  }
+}

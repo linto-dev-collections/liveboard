@@ -1,0 +1,50 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "exclude": ["exports", "types"],
+  "workspaces": {
+    ".": {
+      "ignoreDependencies": ["@liveboard/env", "dotenv", "zod"]
+    },
+    "apps/web": {
+      "entry": ["src/app/**/*.{ts,tsx}", "src/lib/*.ts", "open-next.config.ts"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": [
+        "@liveboard/config",
+        "dotenv",
+        "alchemy",
+        "tailwindcss"
+      ]
+    },
+    "apps/server": {
+      "entry": ["src/infrastructure/**/*.ts", "src/middleware/**/*.ts"],
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["better-auth", "dotenv", "alchemy", "wrangler"],
+      "ignoreBinaries": ["dot"]
+    },
+    "packages/auth": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["dotenv", "zod"]
+    },
+    "packages/db": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["libsql", "zod"]
+    },
+    "packages/env": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": ["dotenv", "cloudflare"]
+    },
+    "packages/shared": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/ui": {
+      "entry": ["src/lib/*.ts", "src/components/ui/*.tsx", "src/hooks/*.ts"],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/infra": {
+      "entry": ["alchemy.run.ts"],
+      "project": ["**/*.ts"],
+      "ignoreDependencies": ["zod", "@liveboard/config"],
+      "ignoreBinaries": ["pgrep"]
+    }
+  }
+}

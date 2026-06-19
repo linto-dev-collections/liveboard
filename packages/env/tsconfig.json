@@ -1,0 +1,3 @@
+{
+  "extends": "@liveboard/config/tsconfig.base.json"
+}

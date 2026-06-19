@@ -1,0 +1,13 @@
+{
+  "extends": "@liveboard/config/tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "apps/web" },
+    { "path": "apps/server" },
+    { "path": "packages/ui" },
+    { "path": "packages/db" },
+    { "path": "packages/auth" },
+    { "path": "packages/env" },
+    { "path": "packages/shared" }
+  ]
+}

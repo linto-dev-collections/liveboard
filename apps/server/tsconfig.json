@@ -1,0 +1,14 @@
+{
+  "extends": "@liveboard/config/tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "strict": true
+  },
+  "include": ["src"]
+}

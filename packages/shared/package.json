@@ -1,0 +1,29 @@
+{
+  "name": "@liveboard/shared",
+  "private": true,
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./date": {
+      "default": "./src/date.ts"
+    },
+    "./schemas": {
+      "default": "./src/schemas/index.ts"
+    },
+    "./schemas/*": {
+      "default": "./src/schemas/*.ts"
+    }
+  },
+  "dependencies": {
+    "dayjs": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@liveboard/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
