@@ -14,12 +14,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@liveboard/ui/components/ui/tabs";
+import { cn } from "@liveboard/ui/lib/utils";
 import {
   CheckCircle2Icon,
   CircleIcon,
   MessageSquarePlusIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatRelativeTime } from "@/lib/format";
 import type { CommentThread } from "../_lib/types";
 
@@ -31,16 +32,24 @@ function ThreadRow({
   thread,
   onJump,
   onResolve,
+  highlighted,
 }: {
   thread: CommentThread;
   onJump: (threadId: string) => void;
   onResolve: (threadId: string, resolved: boolean) => Promise<void>;
+  highlighted?: boolean;
 }) {
   const first = thread.comments[0];
   // 行全体を <button> にすると解決ボタン（<button>）が入れ子になり HTML 不正（hydration error）。
   // カードは <div> にし、ジャンプ用ボタンと解決ボタンを**兄弟**として並べる。
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/60">
+    <div
+      data-thread-id={thread.id}
+      className={cn(
+        "flex flex-col gap-1 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/60",
+        highlighted ? "border-primary ring-2 ring-primary" : "border-border",
+      )}
+    >
       <button
         type="button"
         onClick={() => onJump(thread.id)}
@@ -95,6 +104,8 @@ export function CommentsSheet({
   onJump,
   onResolve,
   onAddComment,
+  highlightThreadId,
+  onHighlightConsumed,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -102,11 +113,40 @@ export function CommentsSheet({
   onJump: (threadId: string) => void;
   onResolve: (threadId: string, resolved: boolean) => Promise<void>;
   onAddComment: () => void;
+  /** キャンバスにピンを出せないスレッドへジャンプした際の強調対象。 */
+  highlightThreadId?: string | null;
+  /** 強調を表示し終えたら呼ぶ（親の指定をクリアするため）。 */
+  onHighlightConsumed?: () => void;
 }) {
   const [tab, setTab] = useState("open");
+  const [ringId, setRingId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const openThreads = threads.filter((t) => !t.resolved);
   const resolvedThreads = threads.filter((t) => t.resolved);
   const list = tab === "open" ? openThreads : resolvedThreads;
+
+  // フォールバック時（キャンバスにピンを出せないスレッド）に、該当行を含むタブへ
+  // 切り替えてスクロールし、一時的にリング強調する。
+  // biome-ignore lint/correctness/useExhaustiveDependencies: highlightThreadId 変化時のみ起動する一回限りの強調。threads / コールバックは起動時点の値で十分。
+  useEffect(() => {
+    if (!highlightThreadId) return;
+    const target = threads.find((x) => x.id === highlightThreadId);
+    if (target) setTab(target.resolved ? "resolved" : "open");
+    setRingId(highlightThreadId);
+    // タブ切替後の再レンダーを待ってから該当行へスクロールする。
+    const scrollTimer = setTimeout(() => {
+      listRef.current
+        ?.querySelector(`[data-thread-id="${CSS.escape(highlightThreadId)}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 80);
+    const ringTimer = setTimeout(() => setRingId(null), 1800);
+    const consumeTimer = setTimeout(() => onHighlightConsumed?.(), 2000);
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(ringTimer);
+      clearTimeout(consumeTimer);
+    };
+  }, [highlightThreadId]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -139,7 +179,7 @@ export function CommentsSheet({
           </div>
           <TabsContent value={tab} className="min-h-0 flex-1">
             <ScrollArea className="h-full">
-              <div className="flex flex-col gap-2 p-3">
+              <div className="flex flex-col gap-2 p-3" ref={listRef}>
                 {list.length === 0 ? (
                   <p className="py-8 text-center text-muted-foreground text-sm">
                     {tab === "open"
@@ -153,6 +193,7 @@ export function CommentsSheet({
                       thread={thread}
                       onJump={onJump}
                       onResolve={onResolve}
+                      highlighted={thread.id === ringId}
                     />
                   ))
                 )}

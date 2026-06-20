@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CaptureUpdateAction,
   sceneCoordsToViewportCoords,
   viewportCoordsToSceneCoords,
 } from "@excalidraw/excalidraw";
@@ -42,6 +43,19 @@ type DraftAnchor =
       screen: { x: number; y: number };
     };
 
+/** api.getSceneElements() の要素型（深い型 import を避けて派生する）。 */
+type SceneElement = ReturnType<
+  ExcalidrawImperativeAPI["getSceneElements"]
+>[number];
+type CanvasAppState = ReturnType<ExcalidrawImperativeAPI["getAppState"]>;
+
+/** スレッドのジャンプ先解決結果。 */
+type ResolvedTarget =
+  | { kind: "element"; el: SceneElement }
+  | { kind: "point"; x: number; y: number }
+  | { kind: "element-missing" }
+  | { kind: "missing" };
+
 type Props = {
   api: ExcalidrawImperativeAPI;
   engine: BoardSyncEngine;
@@ -51,6 +65,10 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sceneBus: SceneChangeBus;
+  /** 通知 / コメント一覧からジャンプ指定された thread。null で指定なし。 */
+  focusThreadId?: string | null;
+  /** ジャンプ指定を消費し終えたら呼ぶ（URL から ?thread= を消すため）。 */
+  onFocusConsumed?: () => void;
 };
 
 /**
@@ -67,6 +85,8 @@ export function BoardComments({
   open,
   onOpenChange,
   sceneBus,
+  focusThreadId,
+  onFocusConsumed,
 }: Props) {
   const { session } = useAuth();
   const currentUserId = session?.user.id ?? null;
@@ -79,6 +99,10 @@ export function BoardComments({
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
   const [placement, setPlacement] = useState(false);
   const [draft, setDraft] = useState<DraftAnchor | null>(null);
+  const [threadsLoaded, setThreadsLoaded] = useState(false);
+  const [highlightThreadId, setHighlightThreadId] = useState<string | null>(
+    null,
+  );
 
   const threadsRef = useRef<CommentThread[]>([]);
   const rafRef = useRef<number | null>(null);
@@ -182,6 +206,10 @@ export function BoardComments({
       })
       .catch(() => {
         if (!cancelled) toast.error("コメントの読み込みに失敗しました");
+      })
+      .finally(() => {
+        // 読込完了を記録（deep-link ジャンプはこの後に発火させる）。
+        if (!cancelled) setThreadsLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -358,13 +386,129 @@ export function BoardComments({
     [serverUrl, boardId, handleApiError],
   );
 
-  const jumpTo = useCallback(
-    (threadId: string) => {
-      onOpenChange(false);
+  // ---- コメントへジャンプ（canvas-first） ----
+
+  /** スレッドの anchor から「キャンバス上の移動先」を解決する。 */
+  const resolveTarget = useCallback(
+    (threadId: string): ResolvedTarget => {
+      const thread = threadsRef.current.find((t) => t.id === threadId);
+      if (!thread) return { kind: "missing" };
+      if (thread.anchorKind === "element" && thread.anchorElementId) {
+        const el = api
+          .getSceneElements()
+          .find((e) => e.id === thread.anchorElementId);
+        return el ? { kind: "element", el } : { kind: "element-missing" };
+      }
+      if (thread.anchorX !== null && thread.anchorY !== null) {
+        return { kind: "point", x: thread.anchorX, y: thread.anchorY };
+      }
+      return { kind: "element-missing" };
+    },
+    [api],
+  );
+
+  /** キャンバスを移動してスレッドのポップオーバーを開く（快適なズームへ自動調整）。 */
+  const focusOnCanvas = useCallback(
+    (
+      threadId: string,
+      target:
+        | { kind: "element"; el: SceneElement }
+        | { kind: "point"; x: number; y: number },
+    ) => {
+      onOpenChange(false); // canvas-first: 一覧シートは閉じる
+      if (target.kind === "element") {
+        // 要素にフィット（ズームは 10–100% に収め、アニメーションで移動）。
+        api.scrollToContent(target.el, {
+          fitToContent: true,
+          animate: true,
+          duration: 500,
+        });
+      } else {
+        // point アンカー: 約 100% で中央へ。射影式は toolbar-extras と同じ。
+        // scroll/zoom 変更は undo 履歴に積まない（NEVER）。
+        const { width, height } = api.getAppState();
+        const zoomValue = 1;
+        api.updateScene({
+          appState: {
+            zoom: { value: zoomValue as CanvasAppState["zoom"]["value"] },
+            scrollX: width / 2 / zoomValue - target.x,
+            scrollY: height / 2 / zoomValue - target.y,
+          },
+          captureUpdate: CaptureUpdateAction.NEVER,
+        });
+      }
       setOpenThreadId(threadId);
+    },
+    [api, onOpenChange],
+  );
+
+  /** キャンバス上に出せないスレッド（要素削除済み等）は一覧シートで強調表示する。 */
+  const showInSheet = useCallback(
+    (threadId: string) => {
+      setHighlightThreadId(threadId);
+      onOpenChange(true);
     },
     [onOpenChange],
   );
+
+  // 一覧シートの行クリック（シーンは表示済みなのでリトライ不要）。
+  const jumpTo = useCallback(
+    (threadId: string) => {
+      const target = resolveTarget(threadId);
+      if (target.kind === "missing") {
+        toast.error("コメントが見つかりませんでした");
+        return;
+      }
+      if (target.kind === "element-missing") {
+        showInSheet(threadId);
+        return;
+      }
+      focusOnCanvas(threadId, target);
+    },
+    [resolveTarget, focusOnCanvas, showInSheet],
+  );
+
+  // 通知 / 別ボードからの ?thread= ジャンプ。スレッド読込後に発火する。
+  // 要素アンカーはシーン読込途中で未取得のことがあるため、数回リトライしてから諦める。
+  useEffect(() => {
+    if (!focusThreadId || !threadsLoaded) return;
+    let attempts = 0;
+    const run = (): boolean => {
+      const target = resolveTarget(focusThreadId);
+      if (target.kind === "missing") {
+        toast.error(
+          "コメントが見つかりませんでした（削除された可能性があります）",
+        );
+        return true;
+      }
+      if (target.kind === "element-missing") {
+        attempts += 1;
+        if (attempts < 12) return false; // 約 12 × 150ms ≈ 1.8 秒待つ
+        showInSheet(focusThreadId);
+        return true;
+      }
+      focusOnCanvas(focusThreadId, target);
+      return true;
+    };
+    if (run()) {
+      onFocusConsumed?.();
+      return;
+    }
+    const timer = setInterval(() => {
+      if (run()) {
+        clearInterval(timer);
+        onFocusConsumed?.();
+      }
+    }, 150);
+    return () => clearInterval(timer);
+  }, [
+    focusThreadId,
+    threadsLoaded,
+    resolveTarget,
+    focusOnCanvas,
+    showInSheet,
+    onFocusConsumed,
+  ]);
 
   return (
     <>
@@ -450,6 +594,8 @@ export function BoardComments({
         onJump={jumpTo}
         onResolve={resolve}
         onAddComment={startAdd}
+        highlightThreadId={highlightThreadId}
+        onHighlightConsumed={() => setHighlightThreadId(null)}
       />
     </>
   );

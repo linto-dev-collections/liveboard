@@ -122,7 +122,11 @@ export function NotificationBell() {
         // 失敗は無視。
       }
     }
-    router.push(`/dashboard/boards/${n.boardId}`);
+    // コメントへジャンプ: ?thread= でボード側にフォーカス対象を渡す
+    // （別ボードでも遷移後に該当コメントの位置へ自動で移動する）。
+    router.push(
+      `/dashboard/boards/${n.boardId}?thread=${encodeURIComponent(n.threadId)}`,
+    );
   }
 
   return (

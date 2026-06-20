@@ -6,7 +6,8 @@ import { Button } from "@liveboard/ui/components/ui/button";
 import { MessageSquareIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
-import { useEffect, useRef, useState } from "react";
+import { useQueryState } from "nuqs";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Participants } from "./_components/participants";
 import { ToolbarExtras } from "./_components/toolbar-extras";
 import { BoardFiles, generateFileId } from "./_lib/files";
@@ -51,6 +52,15 @@ export function BoardCanvas({
   // board onChange を BoardComments へ通知するバス（ピン射影の再計算用・stable）。
   const [sceneBus] = useState(() => new SceneChangeBus());
   const canEdit = role === "owner" || role === "editor";
+
+  // 通知 / コメント一覧から ?thread=<id> でジャンプ指定を受け取り、消費後に URL から消す
+  // （shallow + replace なのでサーバ再実行や履歴汚染は起きない）。
+  const [focusThreadId, setFocusThreadId] = useQueryState("thread", {
+    history: "replace",
+  });
+  const handleFocusConsumed = useCallback(() => {
+    void setFocusThreadId(null);
+  }, [setFocusThreadId]);
 
   // アプリのテーマ（next-themes・storageKey "theme" で永続化済み）を Excalidraw に同期する。
   // theme prop を渡すと Excalidraw のテーマは host 制御になり、Excalidraw 内蔵のテーマトグルは
@@ -136,6 +146,8 @@ export function BoardCanvas({
           open={commentsOpen}
           onOpenChange={setCommentsOpen}
           sceneBus={sceneBus}
+          focusThreadId={focusThreadId}
+          onFocusConsumed={handleFocusConsumed}
         />
       ) : null}
     </div>
